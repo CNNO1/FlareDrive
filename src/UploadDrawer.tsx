@@ -89,11 +89,10 @@ function UploadDrawer({
         const files = Array.from(input.files);
         uploadEnqueue(...files.map((file) => ({ file, basedir: cwd })));
         setOpen(false);
-        onUpload();
       };
       input.click();
     },
-    [cwd, onUpload, setOpen, uploadEnqueue]
+    [cwd, setOpen, uploadEnqueue]
   );
 
   const takePhoto = useMemo(() => handleUpload("photo"), [handleUpload]);
