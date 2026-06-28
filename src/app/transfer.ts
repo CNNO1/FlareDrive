@@ -111,7 +111,17 @@ export async function blobDigest(blob: Blob) {
   return digestHex;
 }
 
-export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
+export const MULTIPART_THRESHOLD = 8 * 1024 * 1024;
+export const CHUNK_SIZE = 10 * 1024 * 1024;
+
+async function assertOk(response: Response) {
+  if (response.status === 401) throw new Error("Unauthorized");
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed with ${response.status}`);
+  }
+  return response;
+}
 
 function xhrFetch(
   url: RequestInfo | URL,
@@ -140,12 +150,14 @@ function xhrFetch(
         }, {} as Record<string, string>);
       resolve(new Response(xhr.responseText, { status: xhr.status, headers }));
     };
-    xhr.onerror = reject;
+    xhr.onerror = () => reject(new Error("Network error"));
     if (
       requestInit.body instanceof Blob ||
       typeof requestInit.body === "string"
     ) {
       xhr.send(requestInit.body);
+    } else {
+      xhr.send();
     }
   });
 }
@@ -168,15 +180,16 @@ export async function multipartUpload(
     headers: { ...headers, ...getWebDavAuthHeader() },
     method: "POST",
   });
+  await assertOk(uploadResponse);
   const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
-  const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
   const limit = pLimit(2);
   const parts = Array.from({ length: totalChunks }, (_, i) => i + 1);
   const partsLoaded = Array.from({ length: totalChunks + 1 }, () => 0);
   const promises = parts.map((i) =>
     limit(async () => {
-      const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
+      const chunk = file.slice((i - 1) * CHUNK_SIZE, i * CHUNK_SIZE);
       const searchParams = new URLSearchParams({
         partNumber: i.toString(),
         uploadId,
@@ -208,6 +221,8 @@ export async function multipartUpload(
           })
           .catch(uploadPart);
       const response = await [1, 2].reduce(retryReducer, uploadPart());
+      await assertOk(response);
+      if (!response.headers.get("etag")) throw new Error("Missing part etag");
       return { partNumber: i, etag: response.headers.get("etag")! };
     })
   );
@@ -218,8 +233,7 @@ export async function multipartUpload(
     headers: getWebDavAuthHeader(),
     body: JSON.stringify({ parts: uploadedParts }),
   });
-  if (!response.ok) throw new Error(await response.text());
-  return response;
+  return assertOk(response);
 }
 
 export async function copyPaste(source: string, target: string, move = false) {
@@ -228,10 +242,10 @@ export async function copyPaste(source: string, target: string, move = false) {
     `${WEBDAV_ENDPOINT}${encodeKey(target)}`,
     window.location.href
   );
-  await fetch(uploadUrl, {
+  await assertOk(await fetch(uploadUrl, {
     method: move ? "MOVE" : "COPY",
     headers: { Destination: destinationUrl.href, ...getWebDavAuthHeader() },
-  });
+  }));
 }
 
 export async function createFolder(cwd: string) {
@@ -244,9 +258,12 @@ export async function createFolder(cwd: string) {
     }
     const folderKey = `${cwd}${folderName}`;
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
-    await fetch(uploadUrl, { method: "MKCOL", headers: getWebDavAuthHeader() });
+    await assertOk(
+      await fetch(uploadUrl, { method: "MKCOL", headers: getWebDavAuthHeader() })
+    );
   } catch (error) {
     console.log(`Create folder failed`);
+    throw error;
   }
 }
 
@@ -272,11 +289,11 @@ export async function processTransferTask({
 
       const thumbnailUploadUrl = `/webdav/_$flaredrive$/thumbnails/${digestHex}.png`;
       try {
-        await fetch(thumbnailUploadUrl, {
+        await assertOk(await fetch(thumbnailUploadUrl, {
           method: "PUT",
           headers: getWebDavAuthHeader(),
           body: thumbnailBlob,
-        });
+        }));
         thumbnailDigest = digestHex;
       } catch (error) {
         console.log(`Upload ${digestHex}.png failed`);
@@ -288,18 +305,20 @@ export async function processTransferTask({
 
   const headers: { "fd-thumbnail"?: string } = {};
   if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
-  if (file.size >= SIZE_LIMIT) {
+  if (file.size >= MULTIPART_THRESHOLD) {
     return await multipartUpload(remoteKey, file, {
       headers,
       onUploadProgress: onTaskProgress,
     });
   } else {
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(remoteKey)}`;
-    return await xhrFetch(uploadUrl, {
-      method: "PUT",
-      headers: { ...headers, ...getWebDavAuthHeader() },
-      body: file,
-      onUploadProgress: onTaskProgress,
-    });
+    return await assertOk(
+      await xhrFetch(uploadUrl, {
+        method: "PUT",
+        headers: { ...headers, ...getWebDavAuthHeader() },
+        body: file,
+        onUploadProgress: onTaskProgress,
+      })
+    );
   }
 }
