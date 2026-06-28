@@ -16,6 +16,7 @@ import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, fetchPath } from "./app/transfer";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
+import { getWebDavAuthHeader } from "./app/auth";
 
 // Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
@@ -176,6 +177,31 @@ function Main({
     });
   }, []);
 
+  const downloadFile = useCallback(
+    async (key: string, openInNewTab = false) => {
+      const response = await fetch(`/webdav/${encodeKey(key)}`, {
+        headers: getWebDavAuthHeader(),
+      });
+      if (response.status === 401) throw new Error("Unauthorized");
+      if (!response.ok) throw new Error("Failed to fetch");
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      if (openInNewTab) {
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+        return;
+      }
+
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = key.split("/").pop()!;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    },
+    []
+  );
+
   return (
     <>
       {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
@@ -195,6 +221,7 @@ function Main({
           <FileGrid
             files={filteredFiles}
             onCwdChange={(newCwd: string) => setCwd(newCwd)}
+            onOpenFile={(file) => downloadFile(file.key, true).catch(onError)}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
             emptyMessage={<Centered>No files or folders</Centered>}
@@ -240,10 +267,7 @@ function Main({
         onClose={() => setMultiSelected(null)}
         onDownload={() => {
           if (multiSelected?.length !== 1) return;
-          const a = document.createElement("a");
-          a.href = `/webdav/${encodeKey(multiSelected[0])}`;
-          a.download = multiSelected[0].split("/").pop()!;
-          a.click();
+          downloadFile(multiSelected[0]).catch(onError);
         }}
         onRename={async () => {
           if (multiSelected?.length !== 1) return;
@@ -260,7 +284,10 @@ function Main({
           const confirmMessage = "Delete the following file(s) permanently?";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
           for (const key of multiSelected)
-            await fetch(`/webdav/${encodeKey(key)}`, { method: "DELETE" });
+            await fetch(`/webdav/${encodeKey(key)}`, {
+              method: "DELETE",
+              headers: getWebDavAuthHeader(),
+            });
           fetchFiles();
         }}
         onShare={() => {
