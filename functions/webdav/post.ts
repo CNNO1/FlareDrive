@@ -1,5 +1,6 @@
 import { notFound } from "./utils";
 import { RequestHandlerParams } from "./utils";
+import { getWriteHttpMetadata } from "./utils";
 
 export async function handleRequestPostCreateMultipart({
   bucket,
@@ -10,7 +11,7 @@ export async function handleRequestPostCreateMultipart({
   const customMetadata = thumbnail ? { thumbnail } : undefined;
 
   const multipartUpload = await bucket.createMultipartUpload(path, {
-    httpMetadata: request.headers,
+    httpMetadata: getWriteHttpMetadata(request.headers),
     customMetadata,
   });
 
