@@ -9,12 +9,14 @@ import { handleRequestPropfind } from "./propfind";
 import { handleRequestPut } from "./put";
 import { RequestHandlerParams } from "./utils";
 import { handleRequestPost } from "./post";
+import { handleRequestLock, handleRequestUnlock } from "./lock";
 
 async function handleRequestOptions() {
   return new Response(null, {
     headers: {
       Allow: Object.keys(HANDLERS).join(", "),
-      DAV: "1",
+      DAV: "1, 2",
+      "MS-Author-Via": "DAV",
     },
   });
 }
@@ -36,6 +38,8 @@ const HANDLERS: Record<
   COPY: handleRequestCopy,
   MOVE: handleRequestMove,
   DELETE: handleRequestDelete,
+  LOCK: handleRequestLock,
+  UNLOCK: handleRequestUnlock,
 };
 
 export const onRequest: PagesFunction<{
