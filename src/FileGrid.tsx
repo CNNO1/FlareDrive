@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import MimeIcon from "./MimeIcon";
 import { humanReadableSize } from "./app/utils";
+import { getWebDavAuthHeader } from "./app/auth";
 
 export interface FileItem {
   key: string;
@@ -29,6 +30,43 @@ export function isDirectory(file: FileItem) {
   return file.httpMetadata?.contentType === "application/x-directory";
 }
 
+function AuthenticatedThumbnail({ file }: { file: FileItem }) {
+  const [src, setSrc] = React.useState<string | null>(null);
+  const thumbnail = file.customMetadata?.thumbnail;
+
+  React.useEffect(() => {
+    if (!thumbnail) return;
+    let active = true;
+    let objectUrl: string | null = null;
+
+    fetch(`/webdav/_$flaredrive$/thumbnails/${thumbnail}.png`, {
+      headers: getWebDavAuthHeader(),
+    })
+      .then((response) => (response.ok ? response.blob() : null))
+      .then((blob) => {
+        if (!active || !blob) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      })
+      .catch(() => setSrc(null));
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [thumbnail]);
+
+  if (!src) return <MimeIcon contentType={file.httpMetadata.contentType} />;
+
+  return (
+    <img
+      src={src}
+      alt={file.key}
+      style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }}
+    />
+  );
+}
+
 function FileGrid({
   files,
   onCwdChange,
@@ -47,7 +85,11 @@ function FileGrid({
   return files.length === 0 ? (
     emptyMessage
   ) : (
-    <Grid container sx={{ paddingBottom: "48px" }}>
+    <Grid
+      container
+      spacing={0.5}
+      sx={{ padding: { xs: 1, sm: 2 }, paddingBottom: "96px" }}
+    >
       {files.map((file) => (
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton
@@ -63,18 +105,17 @@ function FileGrid({
               e.preventDefault();
               onMultiSelect(file.key);
             }}
-            sx={{ userSelect: "none" }}
+            sx={{
+              minHeight: 72,
+              userSelect: "none",
+              borderRadius: 1,
+              "&.Mui-selected": {
+                backgroundColor: "rgba(37, 99, 235, 0.12)",
+              },
+            }}
           >
             <ListItemIcon>
-              {file.customMetadata?.thumbnail ? (
-                <img
-                  src={`/webdav/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`}
-                  alt={file.key}
-                  style={{ width: 36, height: 36, objectFit: "cover" }}
-                />
-              ) : (
-                <MimeIcon contentType={file.httpMetadata.contentType} />
-              )}
+              <AuthenticatedThumbnail file={file} />
             </ListItemIcon>
             <ListItemText
               primary={extractFilename(file.key)}
@@ -88,7 +129,6 @@ function FileGrid({
                   <Box
                     sx={{
                       display: "inline-block",
-                      minWidth: "160px",
                       marginRight: 1,
                     }}
                   >
