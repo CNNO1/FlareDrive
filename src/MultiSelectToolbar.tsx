@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { IconButton, Menu, MenuItem, Slide, Toolbar } from "@mui/material";
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Slide,
+  Toolbar,
+  Tooltip,
+} from "@mui/material";
 import {
   Close as CloseIcon,
   Delete as DeleteIcon,
@@ -38,30 +45,42 @@ function MultiSelectToolbar({
           justifyContent: "space-evenly",
         }}
       >
-        <IconButton color="primary" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-        <IconButton
-          color="primary"
-          disabled={
-            multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
-          }
-          onClick={onDownload}
-        >
-          <DownloadIcon />
-        </IconButton>
-        <IconButton color="primary" onClick={onDelete}>
-          <DeleteIcon />
-        </IconButton>
-        <IconButton
-          color="primary"
-          disabled={
-            multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
-          }
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-        >
-          <MoreHorizIcon />
-        </IconButton>
+        <Tooltip title="取消选择">
+          <IconButton color="primary" onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="下载">
+          <span>
+            <IconButton
+              color="primary"
+              disabled={
+                multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
+              }
+              onClick={onDownload}
+            >
+              <DownloadIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="删除">
+          <IconButton color="primary" onClick={onDelete}>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="更多">
+          <span>
+            <IconButton
+              color="primary"
+              disabled={
+                multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
+              }
+              onClick={(e) => setAnchorEl(e.currentTarget)}
+            >
+              <MoreHorizIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
         {multiSelected?.length && (
           <Menu
             anchorEl={anchorEl}
@@ -70,8 +89,22 @@ function MultiSelectToolbar({
           >
             {multiSelected.length === 1 && (
               <React.Fragment>
-                <MenuItem onClick={onRename}>Rename</MenuItem>
-                <MenuItem onClick={onShare}>Share</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setAnchorEl(null);
+                    onRename();
+                  }}
+                >
+                  重命名
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setAnchorEl(null);
+                    onShare();
+                  }}
+                >
+                  复制地址
+                </MenuItem>
               </React.Fragment>
             )}
           </Menu>
