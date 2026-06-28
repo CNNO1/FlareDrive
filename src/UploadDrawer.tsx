@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useMemo } from "react";
 
-import { Button, Card, Drawer, Fab, Grid, Typography } from "@mui/material";
+import { Box, Button, Drawer, Fab, Grid, Typography } from "@mui/material";
 import {
   Camera as CameraIcon,
   CreateNewFolder as CreateNewFolderIcon,
@@ -41,7 +41,7 @@ export const UploadFab = forwardRef<HTMLButtonElement, { onClick: () => void }>(
     return (
       <Fab
         ref={ref}
-        aria-label="Upload"
+        aria-label="上传"
         variant="circular"
         color="primary"
         size="large"
@@ -105,35 +105,35 @@ function UploadDrawer({
       anchor="bottom"
       open={open}
       onClose={() => setOpen(false)}
-      PaperProps={{ sx: { borderRadius: "16px 16px 0 0" } }}
+      PaperProps={{ sx: { borderRadius: "8px 8px 0 0" } }}
     >
-      <Card sx={{ padding: 2 }}>
+      <Box sx={{ padding: 2, backgroundColor: "background.paper" }}>
         <Grid container spacing={2}>
           <Grid item xs={3}>
             <IconCaptionButton
               icon={<CameraIcon fontSize="large" />}
-              caption="Camera"
+              caption="拍照"
               onClick={takePhoto}
             />
           </Grid>
           <Grid item xs={3}>
             <IconCaptionButton
               icon={<ImageIcon fontSize="large" />}
-              caption="Image/Video"
+              caption="图片视频"
               onClick={uploadImage}
             />
           </Grid>
           <Grid item xs={3}>
             <IconCaptionButton
               icon={<UploadIcon fontSize="large" />}
-              caption="Upload"
+              caption="上传"
               onClick={uploadFile}
             />
           </Grid>
           <Grid item xs={3}>
             <IconCaptionButton
               icon={<CreateNewFolderIcon fontSize="large" />}
-              caption="Create Folder"
+              caption="新建文件夹"
               onClick={async () => {
                 setOpen(false);
                 await createFolder(cwd);
@@ -142,7 +142,7 @@ function UploadDrawer({
             />
           </Grid>
         </Grid>
-      </Card>
+      </Box>
     </Drawer>
   );
 }
