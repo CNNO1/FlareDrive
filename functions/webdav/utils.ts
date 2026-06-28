@@ -23,6 +23,33 @@ export function notFound() {
   return new Response("Not found", { status: 404 });
 }
 
+export function getObjectHeaders(obj: R2Object) {
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("Content-Length", obj.size.toString());
+  headers.set("ETag", obj.httpEtag);
+  headers.set("Last-Modified", obj.uploaded.toUTCString());
+  return headers;
+}
+
+export function getWriteHttpMetadata(headers: Headers): R2HTTPMetadata {
+  const metadata: R2HTTPMetadata = {};
+  const contentType = headers.get("content-type");
+  const contentDisposition = headers.get("content-disposition");
+  const contentLanguage = headers.get("content-language");
+  const cacheControl = headers.get("cache-control");
+  const cacheExpiry = headers.get("expires");
+
+  if (contentType) metadata.contentType = contentType;
+  if (contentDisposition) metadata.contentDisposition = contentDisposition;
+  if (contentLanguage) metadata.contentLanguage = contentLanguage;
+  if (cacheControl) metadata.cacheControl = cacheControl;
+  if (cacheExpiry) metadata.cacheExpiry = new Date(cacheExpiry);
+
+  return metadata;
+}
+
 export function parseBucketPath(context: any): [R2Bucket, string] {
   const { request, env, params } = context;
   const url = new URL(request.url);
