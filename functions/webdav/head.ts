@@ -1,5 +1,6 @@
 import { notFound } from "./utils";
 import { RequestHandlerParams } from "./utils";
+import { getObjectHeaders } from "./utils";
 
 export async function handleRequestHead({
   bucket,
@@ -8,7 +9,5 @@ export async function handleRequestHead({
   const obj = await bucket.head(path);
   if (obj === null) return notFound();
 
-  const headers = new Headers();
-  obj.writeHttpMetadata(headers);
-  return new Response(null, { headers });
+  return new Response(null, { headers: getObjectHeaders(obj) });
 }
