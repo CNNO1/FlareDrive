@@ -1,8 +1,8 @@
 import { ThemeProvider } from "@emotion/react";
 import {
-  Alert,
   Box,
   Button,
+  Chip,
   createTheme,
   CssBaseline,
   GlobalStyles,
@@ -12,6 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { LockOutlined as LockIcon } from "@mui/icons-material";
 import React, { useState } from "react";
 
 import Header from "./Header";
@@ -25,11 +26,22 @@ import {
 import { TransferQueueProvider } from "./app/transferQueue";
 
 const globalStyles = (
-  <GlobalStyles styles={{ "html, body, #root": { height: "100%" } }} />
+  <GlobalStyles
+    styles={{
+      "html, body, #root": { height: "100%" },
+      body: { backgroundColor: "#f6f7f9" },
+      "*": { boxSizing: "border-box" },
+    }}
+  />
 );
 
 const theme = createTheme({
-  palette: { primary: { main: "#f38020" } },
+  palette: {
+    primary: { main: "#2563eb" },
+    secondary: { main: "#f97316" },
+    background: { default: "#f6f7f9" },
+  },
+  shape: { borderRadius: 8 },
 });
 
 function Login({ onLogin }: { onLogin: () => void }) {
@@ -41,7 +53,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
       component="form"
       onSubmit={(event) => {
         event.preventDefault();
-        setWebDavCredentials(username, password);
+        setWebDavCredentials(username.trim(), password);
         onLogin();
       }}
       sx={{
@@ -50,38 +62,71 @@ function Login({ onLogin }: { onLogin: () => void }) {
         alignItems: "center",
         justifyContent: "center",
         padding: 2,
+        backgroundColor: "background.default",
       }}
     >
       <Paper
         elevation={0}
         sx={{
           width: "100%",
-          maxWidth: 360,
+          maxWidth: 388,
           border: "1px solid",
           borderColor: "divider",
-          padding: 3,
+          borderRadius: 1,
+          padding: { xs: 2.5, sm: 3 },
         }}
       >
-        <Stack spacing={2}>
-          <Typography variant="h6">FlareDrive</Typography>
+        <Stack spacing={2.25}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 1,
+                display: "grid",
+                placeItems: "center",
+                color: "common.white",
+                backgroundColor: "primary.main",
+              }}
+            >
+              <LockIcon />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
+                FlareDrive Light
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                私人资料盘
+              </Typography>
+            </Box>
+          </Stack>
+          <Chip
+            label="仅限授权访问"
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{ alignSelf: "flex-start" }}
+          />
           <TextField
             autoFocus
-            label="Username"
+            label="用户名"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
           <TextField
-            label="Password"
+            label="密码"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
           <Button
+            fullWidth
             type="submit"
             variant="contained"
             disabled={!username || !password}
+            sx={{ height: 44 }}
           >
-            Sign in
+            登录
           </Button>
         </Stack>
       </Paper>
@@ -99,7 +144,7 @@ function App() {
     if (newError.message === "Unauthorized") {
       clearWebDavCredentials();
       setIsAuthenticated(false);
-      setError(new Error("Invalid username or password"));
+      setError(new Error("用户名或密码错误"));
       return;
     }
     setError(newError);
@@ -116,10 +161,12 @@ function App() {
               search={search}
               onSearchChange={(newSearch: string) => setSearch(newSearch)}
               setShowProgressDialog={setShowProgressDialog}
+              onLogout={() => {
+                clearWebDavCredentials();
+                setSearch("");
+                setIsAuthenticated(false);
+              }}
             />
-            <Alert severity="info" sx={{ borderRadius: 0 }}>
-              当前网盘仅用于轻量资料，建议本项目容量上限：3GB。
-            </Alert>
             <Main search={search} onError={handleError} />
           </Stack>
         ) : (
