@@ -1,5 +1,6 @@
 import { notFound } from "./utils";
 import { RequestHandlerParams } from "./utils";
+import { getObjectHeaders } from "./utils";
 
 export async function handleRequestGet({
   bucket,
@@ -14,8 +15,7 @@ export async function handleRequestGet({
   if (!("body" in obj))
     return new Response("Preconditions failed", { status: 412 });
 
-  const headers = new Headers();
-  obj.writeHttpMetadata(headers);
+  const headers = getObjectHeaders(obj);
   if (path.startsWith("_$flaredrive$/thumbnails/"))
     headers.set("Cache-Control", "max-age=31536000");
   return new Response(obj.body, { headers });
