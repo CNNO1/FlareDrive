@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@emotion/react";
 import {
+  Alert,
   createTheme,
   CssBaseline,
   GlobalStyles,
@@ -37,6 +38,9 @@ function App() {
             onSearchChange={(newSearch: string) => setSearch(newSearch)}
             setShowProgressDialog={setShowProgressDialog}
           />
+          <Alert severity="info" sx={{ borderRadius: 0 }}>
+            当前网盘仅用于轻量资料，建议本项目容量上限：3GB。
+          </Alert>
           <Main search={search} onError={setError} />
         </Stack>
         <Snackbar
