@@ -32,12 +32,14 @@ export function isDirectory(file: FileItem) {
 function FileGrid({
   files,
   onCwdChange,
+  onOpenFile,
   multiSelected,
   onMultiSelect,
   emptyMessage,
 }: {
   files: FileItem[];
   onCwdChange: (newCwd: string) => void;
+  onOpenFile: (file: FileItem) => void;
   multiSelected: string[] | null;
   onMultiSelect: (key: string) => void;
   emptyMessage?: React.ReactNode;
@@ -55,12 +57,7 @@ function FileGrid({
                 onMultiSelect(file.key);
               } else if (isDirectory(file)) {
                 onCwdChange(file.key + "/");
-              } else
-                window.open(
-                  `/webdav/${encodeKey(file.key)}`,
-                  "_blank",
-                  "noopener,noreferrer"
-                );
+              } else onOpenFile(file);
             }}
             onContextMenu={(e) => {
               e.preventDefault();
