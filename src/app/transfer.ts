@@ -236,10 +236,10 @@ export async function copyPaste(source: string, target: string, move = false) {
 
 export async function createFolder(cwd: string) {
   try {
-    const folderName = window.prompt("Folder name");
+    const folderName = window.prompt("文件夹名称");
     if (!folderName) return;
     if (folderName.includes("/")) {
-      window.alert("Invalid folder name");
+      window.alert("文件夹名称不能包含 /");
       return;
     }
     const folderKey = `${cwd}${folderName}`;
