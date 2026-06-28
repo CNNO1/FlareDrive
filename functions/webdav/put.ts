@@ -1,4 +1,8 @@
-import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
+import {
+  getWriteHttpMetadata,
+  RequestHandlerParams,
+  ROOT_OBJECT,
+} from "./utils";
 
 async function handleRequestPutMultipart({
   bucket,
@@ -50,8 +54,7 @@ export async function handleRequestPut({
   const customMetadata = thumbnail ? { thumbnail } : undefined;
 
   const result = await bucket.put(path, request.body, {
-    onlyIf: request.headers,
-    httpMetadata: request.headers,
+    httpMetadata: getWriteHttpMetadata(request.headers),
     customMetadata,
   });
 
