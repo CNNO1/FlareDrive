@@ -24,9 +24,12 @@ function Centered({ children }: { children: React.ReactNode }) {
     <Box
       sx={{
         display: "flex",
+        flexDirection: "column",
+        gap: 1,
         justifyContent: "center",
         alignItems: "center",
         height: "100%",
+        color: "text.secondary",
       }}
     >
       {children}
@@ -45,28 +48,43 @@ function PathBreadcrumb({
   const parts = path.replace(/\/$/, "").split("/");
 
   return (
-    <Breadcrumbs separator="›" sx={{ padding: 1 }}>
-      <Button onClick={() => onCwdChange("")} sx={{ minWidth: 0, padding: 0 }}>
-        <HomeIcon />
-      </Button>
-      {parts.map((part, index) =>
-        index === parts.length - 1 ? (
-          <Typography key={index} color="text.primary">
-            {part}
-          </Typography>
-        ) : (
-          <Link
-            key={index}
-            component="button"
-            onClick={() => {
-              onCwdChange(parts.slice(0, index + 1).join("/") + "/");
-            }}
-          >
-            {part}
-          </Link>
-        )
-      )}
-    </Breadcrumbs>
+    <Box
+      sx={{
+        paddingX: { xs: 1, sm: 2 },
+        paddingY: 1,
+        backgroundColor: "background.paper",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <Breadcrumbs separator="›">
+        <Button
+          aria-label="返回根目录"
+          onClick={() => onCwdChange("")}
+          sx={{ minWidth: 0, padding: 0.25 }}
+        >
+          <HomeIcon fontSize="small" />
+        </Button>
+        {parts.map((part, index) =>
+          index === parts.length - 1 ? (
+            <Typography key={index} color="text.primary" variant="body2">
+              {part}
+            </Typography>
+          ) : (
+            <Link
+              key={index}
+              component="button"
+              variant="body2"
+              onClick={() => {
+                onCwdChange(parts.slice(0, index + 1).join("/") + "/");
+              }}
+            >
+              {part}
+            </Link>
+          )
+        )}
+      </Breadcrumbs>
+    </Box>
   );
 }
 
@@ -86,8 +104,10 @@ function DropZone({
         flexGrow: 1,
         overflowY: "auto",
         backgroundColor: (theme) => theme.palette.background.default,
-        filter: dragging ? "brightness(0.9)" : "none",
-        transition: "filter 0.2s",
+        outline: dragging ? "2px solid" : "0 solid transparent",
+        outlineColor: "primary.main",
+        outlineOffset: -6,
+        transition: "outline 0.2s",
       }}
       onDragEnter={(e) => {
         e.preventDefault();
@@ -224,7 +244,13 @@ function Main({
             onOpenFile={(file) => downloadFile(file.key, true).catch(onError)}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
-            emptyMessage={<Centered>No files or folders</Centered>}
+            emptyMessage={
+              <Centered>
+                <Typography variant="h6" color="text.primary">
+                  暂无文件
+                </Typography>
+              </Centered>
+            }
           />
         </DropZone>
       )}
@@ -243,7 +269,7 @@ function Main({
             }}
             onClick={() => setShowTextPadDrawer(true)}
           >
-            Open TextPad
+            新建文本
           </Button>
         </>
       )}
@@ -271,7 +297,7 @@ function Main({
         }}
         onRename={async () => {
           if (multiSelected?.length !== 1) return;
-          const newName = window.prompt("Rename to:");
+          const newName = window.prompt("重命名为");
           if (!newName) return;
           await copyPaste(multiSelected[0], cwd + newName, true);
           fetchFiles();
@@ -281,7 +307,7 @@ function Main({
           const filenames = multiSelected
             .map((key) => key.replace(/\/$/, "").split("/").pop())
             .join("\n");
-          const confirmMessage = "Delete the following file(s) permanently?";
+          const confirmMessage = "确认永久删除以下文件？";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
           for (const key of multiSelected)
             await fetch(`/webdav/${encodeKey(key)}`, {
@@ -296,7 +322,7 @@ function Main({
             `/webdav/${encodeKey(multiSelected[0])}`,
             window.location.href
           );
-          navigator.share({ url: url.toString() });
+          navigator.clipboard.writeText(url.toString());
         }}
       />
     </>
