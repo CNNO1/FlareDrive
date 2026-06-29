@@ -197,7 +197,12 @@ async function createMultipart(bucket: R2Bucket, request: Request) {
   const key = requireKey(body.key);
   const size = Number(body.size ?? 0);
   if (!Number.isFinite(size) || size < 0) throw new HttpError(400, "Invalid file size");
-  if (size > MAX_WEBUI_BYTES) throw new HttpError(413, "WebUI upload limit is 250MiB");
+  if (size > MAX_WEBUI_BYTES) {
+    return json(
+      { error: "WebUI upload limit is 250MiB", maxUploadBytes: MAX_WEBUI_BYTES },
+      { status: 413 }
+    );
+  }
   const contentType = body.contentType || "application/octet-stream";
 
   if (size === 0) {
