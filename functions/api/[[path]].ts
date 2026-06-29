@@ -233,14 +233,43 @@ async function uploadPart(bucket: R2Bucket, request: Request) {
   return json({ partNumber, etag: part.etag });
 }
 
+function normalizeUploadedParts(parts: unknown) {
+  if (!Array.isArray(parts) || !parts.length) {
+    throw new HttpError(400, "Missing uploaded parts");
+  }
+  const seen = new Set<number>();
+  return parts
+    .map((part) => {
+      if (!part || typeof part !== "object") {
+        throw new HttpError(400, "Invalid uploaded part");
+      }
+      const candidate = part as Partial<R2UploadedPart>;
+      if (!Number.isInteger(candidate.partNumber) || candidate.partNumber! < 1 || !candidate.etag) {
+        throw new HttpError(400, "Invalid uploaded part");
+      }
+      if (seen.has(candidate.partNumber)) {
+        throw new HttpError(400, "Duplicate uploaded part");
+      }
+      seen.add(candidate.partNumber);
+      return { partNumber: candidate.partNumber, etag: candidate.etag };
+    })
+    .sort((a, b) => a.partNumber - b.partNumber);
+}
+
 async function completeMultipart(bucket: R2Bucket, request: Request) {
-  const body = await request.json<{ key?: string; uploadId?: string; parts?: R2UploadedPart[] }>();
+  const body = await request.json<{ key?: string; uploadId?: string; parts?: unknown }>();
   const key = requireKey(body.key);
-  if (!body.uploadId || !Array.isArray(body.parts) || !body.parts.length) {
+  if (!body.uploadId) {
     throw new HttpError(400, "Invalid complete request");
   }
+  const parts = normalizeUploadedParts(body.parts);
   const upload = bucket.resumeMultipartUpload(key, body.uploadId);
-  const object = await upload.complete(body.parts);
+  let object: R2Object;
+  try {
+    object = await upload.complete(parts);
+  } catch {
+    throw new HttpError(409, "Multipart upload could not be completed. Retry the upload.");
+  }
   return json({ key, size: object.size, etag: object.httpEtag });
 }
 
