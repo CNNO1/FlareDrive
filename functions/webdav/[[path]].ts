@@ -226,9 +226,14 @@ async function handleGet(bucket: R2Bucket, request: Request, key: string, head =
   const clean = cleanKey(key);
   const resource = await resolveResource(bucket, clean);
   if (!resource || resource.folder) throw new HttpError(404, "Not found");
-  const object = head ? await bucket.head(clean) : await bucket.get(clean, { range: request.headers });
+  if (head) {
+    const object = await bucket.head(clean);
+    if (!object) throw new HttpError(404, "Not found");
+    return new Response(null, { headers: objectHeaders(object) });
+  }
+  const object = await bucket.get(clean, { range: request.headers });
   if (!object || !("body" in object)) throw new HttpError(404, "Not found");
-  return new Response(head ? null : object.body, { headers: objectHeaders(object) });
+  return new Response(object.body, { headers: objectHeaders(object) });
 }
 
 async function handlePut(bucket: R2Bucket, request: Request, key: string) {
