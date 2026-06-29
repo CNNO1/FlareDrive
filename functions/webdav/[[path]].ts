@@ -329,23 +329,23 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     switch (context.request.method) {
       case "PROPFIND":
-        return handlePropfind(bucket, context.request, key);
+        return await handlePropfind(bucket, context.request, key);
       case "GET":
-        return handleGet(bucket, context.request, key);
+        return await handleGet(bucket, context.request, key);
       case "HEAD":
-        return handleGet(bucket, context.request, key, true);
+        return await handleGet(bucket, context.request, key, true);
       case "PUT":
-        return handlePut(bucket, context.request, key);
+        return await handlePut(bucket, context.request, key);
       case "MKCOL":
-        return handleMkcol(bucket, key);
+        return await handleMkcol(bucket, key);
       case "DELETE":
-        return handleDelete(bucket, key);
+        return await handleDelete(bucket, key);
       case "COPY":
-        return handleCopyMove(bucket, context.request, key, false);
+        return await handleCopyMove(bucket, context.request, key, false);
       case "MOVE":
-        return handleCopyMove(bucket, context.request, key, true);
+        return await handleCopyMove(bucket, context.request, key, true);
       case "LOCK":
-        return handleLock(key);
+        return await handleLock(key);
       case "UNLOCK":
         return new Response(null, { status: 204 });
       default:

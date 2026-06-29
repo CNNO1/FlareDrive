@@ -329,17 +329,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (!bucket) throw new HttpError(500, "R2 bucket binding is missing");
     if (method === "GET" && action === "list") {
-      return listObjects(bucket, new URL(context.request.url).searchParams.get("prefix") ?? "");
+      return await listObjects(bucket, new URL(context.request.url).searchParams.get("prefix") ?? "");
     }
-    if (method === "GET" && action === "usage") return usage(bucket);
-    if (method === "GET" && action === "file") return download(bucket, context.request);
-    if (method === "POST" && action === "folder") return createFolder(bucket, context.request);
-    if (method === "POST" && action === "multipart/create") return createMultipart(bucket, context.request);
-    if (method === "PUT" && action === "multipart/part") return uploadPart(bucket, context.request);
-    if (method === "POST" && action === "multipart/complete") return completeMultipart(bucket, context.request);
-    if (method === "POST" && action === "multipart/abort") return abortMultipart(bucket, context.request);
-    if (method === "DELETE" && action === "object") return deleteObject(bucket, context.request);
-    if (method === "POST" && action === "rename") return renameObject(bucket, context.request);
+    if (method === "GET" && action === "usage") return await usage(bucket);
+    if (method === "GET" && action === "file") return await download(bucket, context.request);
+    if (method === "POST" && action === "folder") return await createFolder(bucket, context.request);
+    if (method === "POST" && action === "multipart/create") return await createMultipart(bucket, context.request);
+    if (method === "PUT" && action === "multipart/part") return await uploadPart(bucket, context.request);
+    if (method === "POST" && action === "multipart/complete") return await completeMultipart(bucket, context.request);
+    if (method === "POST" && action === "multipart/abort") return await abortMultipart(bucket, context.request);
+    if (method === "DELETE" && action === "object") return await deleteObject(bucket, context.request);
+    if (method === "POST" && action === "rename") return await renameObject(bucket, context.request);
 
     throw new HttpError(404, "Not found");
   } catch (error) {
